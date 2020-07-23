@@ -1,0 +1,52 @@
+. /export/home/oracle/.profile
+sqlplus -s '/ as sysdba' << RMN
+set lines 700 pages 1000
+select to_char(sysdate,'dd-mon-yyyy hh24:mi') "DATE_CHECK" from dual;
+SELECT ddf.tablespace_name
+  FROM v\$datafile vdf, dba_data_files ddf
+ WHERE vdf.status = 'ONLINE'
+   AND vdf.BYTES BETWEEN 26500000000 AND 35000000000
+   AND vdf.NAME = ddf.file_name GROUP BY ddf.tablespace_name
+--   AND ddf.autoextensible = 'YES'
+MINUS
+SELECT ddf.tablespace_name
+  FROM v\$datafile vdf, dba_data_files ddf
+ WHERE vdf.status = 'ONLINE'
+   AND vdf.BYTES BETWEEN 00000000001 AND 21000000000
+   AND ddf.tablespace_name IN (
+          SELECT ddf.tablespace_name
+            FROM v\$datafile vdf, dba_data_files ddf
+           WHERE vdf.status = 'ONLINE'
+      AND vdf.BYTES BETWEEN 26500000000 AND 35000000000
+             AND vdf.NAME = ddf.file_name GROUP BY ddf.tablespace_name
+--             AND ddf.autoextensible = 'YES'
+             )
+   AND vdf.NAME = ddf.file_name GROUP BY ddf.tablespace_name;
+--   AND ddf.autoextensible = 'YES'
+
+
+select tablespace_name,round(bytes/1024/1024/1024) gb from dba_DATA_FILES where tablespace_name in
+(
+SELECT ddf.tablespace_name
+  FROM v\$datafile vdf, dba_data_files ddf
+ WHERE vdf.status = 'ONLINE'
+   AND vdf.BYTES BETWEEN 26500000000 AND 35000000000
+   AND vdf.NAME = ddf.file_name GROUP BY ddf.tablespace_name
+--   AND ddf.autoextensible = 'YES'
+MINUS
+SELECT ddf.tablespace_name
+  FROM v\$datafile vdf, dba_data_files ddf
+ WHERE vdf.status = 'ONLINE'
+   AND vdf.BYTES BETWEEN 00000000001 AND 21000000000
+   AND ddf.tablespace_name IN (
+          SELECT ddf.tablespace_name
+            FROM v\$datafile vdf, dba_data_files ddf
+           WHERE vdf.status = 'ONLINE'
+      AND vdf.BYTES BETWEEN 26500000000 AND 35000000000
+             AND vdf.NAME = ddf.file_name GROUP BY ddf.tablespace_name
+--             AND ddf.autoextensible = 'YES'
+             )
+   AND vdf.NAME = ddf.file_name GROUP BY ddf.tablespace_name
+--   AND ddf.autoextensible = 'YES'
+)
+order by 2,1 asc;
