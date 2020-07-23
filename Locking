@@ -1,0 +1,37 @@
+select /*+RULE*/
+ substr(l.sid,1,6) SID,
+ substr(s.serial#,1,6) "SERIAL",
+ substr(s.osuser,1,16) osuser,
+ substr(s.username,1,11) owner,
+ SUBSTR(MACHINE,1,18) machine,
+ --substr(s.program,1,15) program,
+ substr(o.name,1,16) OBJECT_NAME,
+  substr(decode(block,
+         0, 'Not Blocking',  /* Not blocking any other processes */
+  1, 'Blocking',      /* This lock blocks other processes */
+  2, 'Global',        /* This lock is global, so we can't tell */
+  to_char(block)),1,16) blocking_others,
+ decode(lmode,
+  0, 'None',           /* Mon Lock equivalent */
+  1, 'Null',           /* N */
+  2, 'Row-S (SS)',     /* L */
+  3, 'Row-X (SX)',     /* R */
+  4, 'Share',          /* S */
+  5, 'S/Row-X (SSX)',  /* C */
+  6, 'Exclusive',      /* X */
+  'Invalid') mode_held,
+         decode(request,
+  0, 'None',           /* Mon Lock equivalent */
+  1, 'Null',           /* N */
+  2, 'Row-S (SS)',     /* L */
+  3, 'Row-X (SX)',     /* R */
+  4, 'Share',          /* S */
+  5, 'S/Row-X (SSX)',  /* C */
+  6, 'Exclusive',      /* X */
+  'Invalid') mode_requested
+      from v$lock l, sys.obj$ o, v$session s
+      where l.id1 = o.obj#(+) and
+            l.sid = s.sid and
+            l.block <>0 and s.username is not null
+      order by object_name
+;
