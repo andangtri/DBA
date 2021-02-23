@@ -1,0 +1,10 @@
+SELECT ROUND (used.bytes / 1024 / 1024, 2) used_mb,
+ROUND (free.bytes / 1024 / 1024, 2) free_mb,
+ROUND (tot.bytes / 1024 / 1024, 2) total_mb
+FROM (SELECT SUM (bytes) bytes
+FROM v$sgastat
+WHERE name != 'free memory') used,
+(SELECT SUM (bytes) bytes
+FROM v$sgastat
+WHERE name = 'free memory') free,
+(SELECT SUM (bytes) bytes FROM v$sgastat) tot;
